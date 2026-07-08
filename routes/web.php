@@ -24,15 +24,18 @@ Route::get('/jalankan-migrasi', function () {
         // 2. Kosongkan database
         Schema::dropAllTables();
 
-        // 3. Jalankan import
+        // 3. Jalankan import SQL
         $sql = file_get_contents($sqlPath);
         DB::unprepared($sql);
 
-        // 4. Nyalakan kembali aturan
+        // 4. Buat Link Storage (PENTING)
+        \Illuminate\Support\Facades\Artisan::call('storage:link');
+
+        // 5. Nyalakan kembali aturan
         DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
         DB::statement('SET sql_require_primary_key = 1;');
 
-        return 'Berhasil! Database sudah diimpor tanpa kendala Primary Key.';
+        return 'Berhasil! Database diimpor dan Storage Link dibuat.';
     } catch (\Exception $e) {
         return 'Gagal: ' . $e->getMessage();
     }
