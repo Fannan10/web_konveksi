@@ -9,8 +9,9 @@ Route::get('/berita/{id}', [FrontendController::class, 'show'])->name('berita.de
 
 Route::get('/jalankan-migrasi', function () {
     try {
-        Artisan::call('migrate', ['--force' => true]);
-        return 'Sip! Semua tabel database berhasil dibuat di Aiven MySQL.';
+        // Kita ubah 'migrate' menjadi 'migrate:fresh' untuk membersihkan dan mengulang semua tabel
+        Artisan::call('migrate:fresh', ['--force' => true]);
+        return 'Sip! Semua tabel database berhasil di-reset dan dibuat ulang di Aiven MySQL.';
     } catch (\Exception $e) {
         return 'Gagal migrasi: ' . $e->getMessage();
     }
