@@ -6,49 +6,38 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-// Rute Halaman Depan
+// 1. Route Halaman Utama
 Route::get('/', [FrontendController::class, 'index'])->name('home');
 Route::get('/berita/{id}', [FrontendController::class, 'show'])->name('berita.detail');
 
-// Rute untuk menampilkan gambar dari storage (Fallback agar gambar muncul)
+// 2. Route Khusus untuk Menampilkan Gambar (Solusi "Pintar" agar foto muncul)
+// Ini menangkap permintaan gambar dan langsung mengambil dari folder storage
 Route::get('/storage/{folder}/{filename}', function ($folder, $filename) {
     $path = storage_path('app/public/' . $folder . '/' . $filename);
     
     if (!file_exists($path)) {
-        abort(404);
+        // Jika file tidak ditemukan, coba cari di folder lain atau abort
+        abort(404, 'File gambar tidak ditemukan di: ' . $path);
     }
     return response()->file($path);
-})->where('folder', 'galleries|organizations');
+})->where('folder', '.*');
 
-// Rute Migrasi (Jalankan ini sekali setelah deploy)
+// 3. Route Migrasi & Maintenance
 Route::get('/jalankan-migrasi', function () {
     try {
         $sqlPath = database_path('web_konveksi.sql');
-        
-        if (!file_exists($sqlPath)) {
-            return 'Gagal: File web_konveksi.sql tidak ditemukan!';
-        }
+        if (!file_exists($sqlPath)) return 'Gagal: File SQL tidak ada!';
 
-        // 1. Matikan aturan database sementara
-        DB::statement('SET sql_require_primary_key = 0;');
         DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
-        
-        // 2. Kosongkan database
         Schema::dropAllTables();
+        DB::unprepared(file_get_contents($sqlPath));
+        DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
 
-        // 3. Jalankan import SQL
-        $sql = file_get_contents($sqlPath);
-        DB::unprepared($sql);
-
-        // 4. Buat Link Storage (untuk jaga-jaga)
+        // Mencoba membuat link (jika gagal tidak masalah karena route no. 2 sudah menghandle)
         Artisan::call('storage:link');
 
-        // 5. Nyalakan kembali aturan database
-        DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
-        DB::statement('SET sql_require_primary_key = 1;');
-
-        return 'Berhasil! Database diimpor dan Storage Link dibuat.';
+        return 'Berhasil! Database diimpor. Gambar akan diakses melalui route bypass.';
     } catch (\Exception $e) {
-        return 'Gagal: ' . $e->getMessage();
+        return 'Error: ' . $e->getMessage();
     }
 });
