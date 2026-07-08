@@ -59,6 +59,11 @@ http://127.0.0.1:8000/admin
 - galleries: Data foto galeri produk
 - organizations: Data struktur organisasi
 
+## Marchetti Konveksi
+Website Konveksi profesional yang dibangun dengan Laravel.
+
+**Link Yang Sudah diHosting:** https://web-konveksi.onrender.com
+
 ## Developer
 - Nama: 1. MUHAMMAD YASIR SHIDDIQ (24030001), 2. MUHAMMAD FANNAN PRATAMA (24030020), 3. LUQMAN WIJAYA (24030027)
 - Mata Kuliah: Rekayasa Web
