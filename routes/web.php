@@ -16,15 +16,29 @@ Route::get('/jalankan-migrasi', function () {
             return 'Gagal: File web_konveksi.sql tidak ditemukan di folder database!';
         }
 
-        // 1. Bersihkan semua tabel lama agar tidak bentrok (Table already exists)
-        Artisan::call('migrate:fresh', ['--force' => true]);
+        // Matikan pengecekan foreign key agar bisa menghapus tabel dengan bersih tanpa error restraint
+        DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
 
-        // 2. Jalankan import file SQL bawaan Anda
+        // Ambil daftar semua tabel yang ada di database saat ini
+        $tables = DB::select('SHOW TABLES');
+        $dbName = 'Tables_in_' . env('DB_DATABASE', 'defaultdb');
+
+        // Hapus paksa semua tabel yang tersisa di database
+        foreach ($tables as $table) {
+            DB::statement('DROP TABLE IF EXISTS ' . $table->$dbName);
+        }
+
+        // Jalankan import file SQL bawaan Anda secara bersih
         $sql = file_get_contents($sqlPath);
         DB::unprepared($sql);
 
-        return 'Luar biasa! Semua tabel dan data dari file SQL berhasil dimasukkan ke Aiven MySQL.';
+        // Nyalakan kembali pengecekan foreign key
+        DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
+
+        return 'Luar biasa! Database berhasil dikosongkan total dan semua data dari file SQL sukses dimasukkan.';
     } catch (\Exception $e) {
+        // Pastikan foreign key dinyalakan lagi jika gagal di tengah jalan
+        DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
         return 'Gagal import SQL: ' . $e->getMessage();
     }
 });
