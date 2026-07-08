@@ -6,9 +6,21 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
+// Rute Halaman Depan
 Route::get('/', [FrontendController::class, 'index'])->name('home');
 Route::get('/berita/{id}', [FrontendController::class, 'show'])->name('berita.detail');
 
+// Rute untuk menampilkan gambar dari storage (Fallback agar gambar muncul)
+Route::get('/storage/{folder}/{filename}', function ($folder, $filename) {
+    $path = storage_path('app/public/' . $folder . '/' . $filename);
+    
+    if (!file_exists($path)) {
+        abort(404);
+    }
+    return response()->file($path);
+})->where('folder', 'galleries|organizations');
+
+// Rute Migrasi (Jalankan ini sekali setelah deploy)
 Route::get('/jalankan-migrasi', function () {
     try {
         $sqlPath = database_path('web_konveksi.sql');
@@ -17,7 +29,7 @@ Route::get('/jalankan-migrasi', function () {
             return 'Gagal: File web_konveksi.sql tidak ditemukan!';
         }
 
-        // 1. Matikan aturan Primary Key dan Foreign Key
+        // 1. Matikan aturan database sementara
         DB::statement('SET sql_require_primary_key = 0;');
         DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
         
@@ -28,10 +40,10 @@ Route::get('/jalankan-migrasi', function () {
         $sql = file_get_contents($sqlPath);
         DB::unprepared($sql);
 
-        // 4. Buat Link Storage (PENTING)
-        \Illuminate\Support\Facades\Artisan::call('storage:link');
+        // 4. Buat Link Storage (untuk jaga-jaga)
+        Artisan::call('storage:link');
 
-        // 5. Nyalakan kembali aturan
+        // 5. Nyalakan kembali aturan database
         DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
         DB::statement('SET sql_require_primary_key = 1;');
 
