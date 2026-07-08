@@ -13,9 +13,13 @@ Route::get('/jalankan-migrasi', function () {
         $sqlPath = database_path('web_konveksi.sql');
         
         if (!file_exists($sqlPath)) {
-            return 'Gagal: File web_konveksi.sql tidak ditemukan di root folder!';
+            return 'Gagal: File web_konveksi.sql tidak ditemukan di folder database!';
         }
 
+        // 1. Bersihkan semua tabel lama agar tidak bentrok (Table already exists)
+        Artisan::call('migrate:fresh', ['--force' => true]);
+
+        // 2. Jalankan import file SQL bawaan Anda
         $sql = file_get_contents($sqlPath);
         DB::unprepared($sql);
 
