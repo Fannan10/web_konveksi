@@ -14,20 +14,26 @@ Route::get('/jalankan-migrasi', function () {
         $sqlPath = database_path('web_konveksi.sql');
         
         if (!file_exists($sqlPath)) {
-            return 'Gagal: File web_konveksi.sql tidak ditemukan di folder database!';
+            return 'Gagal: File web_konveksi.sql tidak ditemukan!';
         }
 
-        // 1. Matikan foreign key & ratakan semua tabel sampai kosong total
+        // 1. Matikan aturan Primary Key dan Foreign Key
+        DB::statement('SET sql_require_primary_key = 0;');
         DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
+        
+        // 2. Kosongkan database
         Schema::dropAllTables();
-        DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
 
-        // 2. Jalankan import file SQL bawaan Anda secara bersih
+        // 3. Jalankan import
         $sql = file_get_contents($sqlPath);
         DB::unprepared($sql);
 
-        return 'Luar biasa! Database dikosongkan total dan semua data dari file SQL sukses dimasukkan ke Aiven MySQL.';
+        // 4. Nyalakan kembali aturan
+        DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
+        DB::statement('SET sql_require_primary_key = 1;');
+
+        return 'Berhasil! Database sudah diimpor tanpa kendala Primary Key.';
     } catch (\Exception $e) {
-        return 'Gagal import SQL: ' . $e->getMessage();
+        return 'Gagal: ' . $e->getMessage();
     }
 });
